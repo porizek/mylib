@@ -6,9 +6,12 @@ from reproduction_number import *
 
 datsrc = "../data/src/reproduction_number-test"
 datout = "../data/out/reproduction_number-test"
+dattail =  "../data/out/reproduction_number-test-tail"
 wrksrc = "../data/wrk/"
 wrkout = "../data/wrk/reproduction_number-test"
-def makedat(infile, outfile, running=1, formatdts="dts", delim=",", coldts=0, colinfected=1, colhealed=2,
+wrktail = "../data/wrk/reproduction_number-test-tail"
+
+def makedat(infile, outfile, outtailfile="", running=1, formatdts="dts", delim=",", coldts=0, colinfected=1, colhealed=2,
         colactive=None, limit=0.0, par_l=7.0, par_d=9.0):
     # read data from input file
     ax = []
@@ -40,6 +43,13 @@ def makedat(infile, outfile, running=1, formatdts="dts", delim=",", coldts=0, co
                 print(line, file=f, end='')
         for record in result:
             print(*record, file=f)
+    # calcuate tail
+    if len(outtailfile) > 0  and  running >= 3:
+        tailresult =  reprod.calculate(running, tail=True)
+        # write result tail  in xmgrace format into output file
+        with open(outtailfile, "w") as f:
+            for record in tailresult:
+                print(*record, file=f)
 
 
 #########################################################################
@@ -53,9 +63,10 @@ dts_format={1:"epoch", 2:"DMY", 3:"YMD"}
 delim={1:",",2:";", 3:","}
 for test in range(1,4):
     for days in days_list:
-        input_file= datsrc + str(test) + ".csv"
-        output_file=datout + str(test) + "-" + str(days) + ".dat"
-        makedat(input_file,output_file, days, dts_format[test], delim[test], coldts=0, colinfected=1, colhealed=2, colactive=None, limit=0.0, par_l=7.0, par_d=9.0 )
+        input_file = datsrc + str(test) + ".csv"
+        output_file = datout + str(test) + "-" + str(days) + ".dat"
+        tail_file = dattail + str(test) + "-" + str(days) + ".dat"
+        makedat(input_file,output_file, tail_file, days, dts_format[test], delim[test], coldts=0, colinfected=1, colhealed=2, colactive=None, limit=0.0, par_l=7.0, par_d=9.0 )
 
 # current status calculation
 # 1. download wrk/korona.gov.sk.csv from https://mapa.covid.chat/export/csv
@@ -66,6 +77,7 @@ input_file_list = {2:"korona.gov.sk.csv", 3:"nakazeni-vyleceni-umrti-testy.csv"}
 for test in range(2,4):
     for days in days_list:
         input_file= wrksrc + input_file_list[test]
-        output_file=wrkout + str(test) + "-" + str(days) + ".dat"
-        makedat(input_file,output_file, days, dts_format[test], delim[test], coldts=0, colinfected=1, colhealed=2, colactive=None, limit=0.0, par_l=7.0, par_d=9.0 )
+        output_file = wrkout + str(test) + "-" + str(days) + ".dat"
+        tail_file = wrktail + str(test) + "-" + str(days) + ".dat"
+        makedat(input_file,output_file, tail_file, days, dts_format[test], delim[test], coldts=0, colinfected=1, colhealed=2, colactive=None, limit=0.0, par_l=7.0, par_d=9.0 )
 

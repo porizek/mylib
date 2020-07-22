@@ -4,6 +4,7 @@ import datetime
 
 
 def dts_decode(dts,mode):
+    '''epoch (seconds from 1970), DD-MM-YYYY and YYYY-MM-DD formats are available from decoding'''
     if mode == "epoch":
         result = datetime.datetime.fromtimestamp(int(dts))
     elif mode == "DMY":
@@ -22,20 +23,24 @@ class Reprod:
     ncolresult=5
 
     def __init__(self, ax, ay, formatdts="dts",limit=0.0, l=7.0, d=9.0,stdevkoef = 10.0):
+        ''' Reprod constructor'''
+        # read initialization parameter into variables:
         self.par_limit=limit
         self.par_l=l
         self.par_d=d
         self.stdevkoef=stdevkoef
-        self.log=False
+        self.log=False  # indicator whether logarythm column has been already calculated
         self.data = []
         if len(ax) != len(ay):
-            raise Exception("Linear regression: x is different size than y")
+            raise Exception("Reproduction number constructor: x is different size than y")
 
         self.start=dts_decode(ax[0],formatdts) # determine a start date - for now just from the first line of input
 
+        # Generate a genral source data set from custom input: dts(epoch), iso ,day, infected
         for index, dts in enumerate(ax):
+            # create an empty record to write
             record = [None] * len(Reprod.coldata)
-
+            # fill it it with data: dts(epoch), iso ,day, infected
             stamp = dts_decode(dts,formatdts)
             day = (stamp-self.start).total_seconds()/3600/24
             iso = stamp.strftime("%Y-%m-%dT%H:%M:%S")
@@ -47,16 +52,20 @@ class Reprod:
             self.data.append(record)
 
     def R0(self,k):
+        ''' Calculate R0 from known infection rate k, with the provided paramters l and d'''
         return 1 + k * (self.par_l + self.par_d) + k * k * self.par_l * self.par_d
 
-    def calculate(self,running = 1):
+    def calculate(self, running = 1, tail = False):
+        ''' Calculate the infection rate k and R0 - create a set of results'''
+        # creatge an empty field to store the result set
         result_array = []
-        if not self.log:
+        if not self.log:  # if logarythm colum has not been calculated yet - do it!
            for index , record in enumerate(self.data):
                infected = record[Reprod.coldata["infect"]]
-               if infected > self.par_limit:
+               if infected > self.par_limit: # calculate only for values >0  (> par_limit)
                    self.data[index][Reprod.coldata["infect_ln"]] = math.log(infected)
-        if running == 1:  # single differencies calculation
+        self.log=True
+        if running == 1:  # single day differencies calculation - basically legacy option
             last = None
             for index, record in enumerate(self.data):
                 if not self.data[index][Reprod.coldata["infect_ln"]] is None  :  #  calculated log value exists
@@ -78,41 +87,85 @@ class Reprod:
                         result_array.append(result)
                     last=index
             return result_array
-        elif running > 2:
-            stat = regress.Regress()
-            first = []
-            for index, record in enumerate(self.data):
-                if not self.data[index][Reprod.coldata["infect_ln"]] is None  :  #  calculated log value exists
-                    infect= record[Reprod.coldata["infect_ln"]]
-                    day= record[Reprod.coldata["day"]]
-                    stat.add(day,infect)
-                    first.append([day,infect])
-                    if stat.n >= running:
-                        result = [None] * len(Reprod.colresult)
-                        reg = stat.fiterr()
-                        k=reg["a"]
+        elif running > 2: # calulating average by regression over >2 points
+            if tail == False:  # regular calculation of average of n-points
+                stat = regress.Regress()
+                first = []
+                for index, record in enumerate(self.data):
+                    if not self.data[index][Reprod.coldata["infect_ln"]] is None  :  #  calculated log value exists
+                        infect= record[Reprod.coldata["infect_ln"]]
+                        day= record[Reprod.coldata["day"]]
+                        stat.add(day,infect)
+                        first.append([day,infect])
+                        if stat.n >= running:
+                            result = [None] * len(Reprod.colresult)
+                            reg = stat.fiterr()
+                            k=reg["a"]
+                            ka= k - self.stdevkoef * reg["da"]
+                            kb= k + self.stdevkoef * reg["da"]
+                            r = self.R0(k)
+                            ra = self.R0(ka)
+                            rb = self.R0(kb)
+                            result[Reprod.colresult["dts"]] = record[Reprod.coldata["dts"]]
+                            dayavg = stat.sx / stat.n
+                            result[Reprod.colresult["day"]] = dayavg
+                            stampavg = self.start + datetime.timedelta(dayavg)
+                            isoavg = stampavg.strftime("%Y-%m-%dT%H:%M:%S")
+                            result[Reprod.colresult["iso"]] = isoavg
+                            result[Reprod.colresult["k"]] = k
+                            result[Reprod.colresult["r"]] = r
+                            result[Reprod.colresult["ka"]] = ka
+                            result[Reprod.colresult["ra"]] = ra
+                            result[Reprod.colresult["kb"]] = kb
+                            result[Reprod.colresult["rb"]] = rb
+                            result_array.append(result)
+                            # remove first element from statistic
+                            day_first,infect_first=first.pop(0)
+                            stat.sub(day_first,infect_first)
+                return result_array
+            elif tail == True: # calculating tail only
+                stat = regress.Regress()
+                first = []
+                # filling statitics fir the last "running" points
+                for index, record in enumerate(reversed(self.data)):
+                    if not self.data[index][Reprod.coldata["infect_ln"]] is None  :  #  calculated log value exists
+                        infect= record[Reprod.coldata["infect_ln"]]
+                        day= record[Reprod.coldata["day"]]
+                        stat.add(day,infect)
+                        first.append([day,infect])
+                        if stat.n >= running:
+                            break
+                # calculate result and decrease stat until there are minimal three points for linear regression left
+                while stat.n >= 3:
+                    result = [None] * len(Reprod.colresult)
+                    reg = stat.fiterr()
+                    k=reg["a"]
+                    r = self.R0(k)
+                    try:
                         ka= k - self.stdevkoef * reg["da"]
-                        kb= k + self.stdevkoef * reg["da"]
-                        r = self.R0(k)
-                        ra = self.R0(ka)
-                        rb = self.R0(kb)
-                        result[Reprod.colresult["dts"]] = record[Reprod.coldata["dts"]]
-                        dayavg = stat.sx / stat.n
-                        result[Reprod.colresult["day"]] = dayavg
-                        stampavg = self.start + datetime.timedelta(dayavg)
-                        isoavg = stampavg.strftime("%Y-%m-%dT%H:%M:%S")
-                        result[Reprod.colresult["iso"]] = isoavg
-                        result[Reprod.colresult["k"]] = k
-                        result[Reprod.colresult["r"]] = r
-                        result[Reprod.colresult["ka"]] = ka
-                        result[Reprod.colresult["ra"]] = ra
-                        result[Reprod.colresult["kb"]] = kb
-                        result[Reprod.colresult["rb"]] = rb
-                        result_array.append(result)
-                        # remove first element from statistic
-                        day_first,infect_first=first.pop(0)
-                        stat.sub(day_first,infect_first)
-            return result_array
+                        kb= k + self.stdevkoef * reg["db"]
+                    except TypeError:
+                        ka = k
+                        kb = k
+                    ra = self.R0(ka)
+                    rb = self.R0(kb)
+                    result[Reprod.colresult["dts"]] = record[Reprod.coldata["dts"]]
+                    dayavg = stat.sx / stat.n
+                    result[Reprod.colresult["day"]] = dayavg
+                    stampavg = self.start + datetime.timedelta(dayavg)
+                    isoavg = stampavg.strftime("%Y-%m-%dT%H:%M:%S")
+                    result[Reprod.colresult["iso"]] = isoavg
+                    result[Reprod.colresult["k"]] = k
+                    result[Reprod.colresult["r"]] = r
+                    result[Reprod.colresult["ka"]] = ka
+                    result[Reprod.colresult["ra"]] = ra
+                    result[Reprod.colresult["kb"]] = kb
+                    result[Reprod.colresult["rb"]] = rb
+                    result_array.append(result)
+                    # remove last element from statistic
+                    day_first,infect_first=first.pop()
+                    stat.sub(day_first,infect_first)
+                return result_array
 
 
 

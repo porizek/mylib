@@ -68,24 +68,38 @@ class Regress:
 
         (a,b) = self.fit()
         # correlation coeficient rxy
-        rxy = (n*sxy - sx*sy )
-        rxy = rxy*rxy / (n*sxx - sx*sx)  / (n*syy - sy*sy)
+        try:
+            rxy = (n*sxy - sx*sy)
+            rxy2 = rxy*rxy / (n*sxx - sx*sx) / (n*syy - sy*sy)
+            rxy = math.sqrt(rxy2)
+        except (ZeroDivisionError,ValueError):
+            rxy2 = None
+            rxy = None
         # dee = b*b*n + a*a*sxx - 2*a*sx*sy + syy + 2*a*b*sx - 2*b*sy
-        dee = (n*syy - sy*sy - a*a*(n*sxx - sx*sx) )/n/(n-2)
         # daa = n/(n-2) * dee/(n*sxx - sx*sx)
-        daa = n*dee/(n*sxx - sx*sx)
-        dbb = daa * sxx / n
+        try:
+            dee = (n*syy - sy*sy - a*a*(n*sxx - sx*sx))/n/(n-2)
+            daa = n*dee/(n*sxx - sx*sx)
+            dbb = daa * sxx / n
+            da = math.sqrt(daa)
+            db = math.sqrt(dbb)
+        except (ZeroDivisionError,ValueError):
+            dee = None
+            daa = None
+            dbb = None
+            da = None
+            db = None
         result = {
             "a":a,
-            "b":b ,
-            "da":math.sqrt(daa) ,
-            "db":math.sqrt(dbb),
-            "daa":daa ,
+            "b":b,
+            "da":da,
+            "db":db,
+            "daa":daa,
             "dbb":dbb,
             "n": n,
-            "dee" : dee,
-            "rxy2" : rxy,
-            "rxy" : math.sqrt(rxy)
+            "dee": dee,
+            "rxy2": rxy2,
+            "rxy": rxy
         }
         return result
 
