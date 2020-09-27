@@ -128,7 +128,7 @@ class Reprod:
                 first = []
                 # filling statitics fir the last "running" points
                 for index, record in enumerate(reversed(self.data)):
-                    if not self.data[index][Reprod.coldata["infect_ln"]] is None  :  #  calculated log value exists
+                    if not record[Reprod.coldata["infect_ln"]] is None  :  #  calculated log value exists
                         infect= record[Reprod.coldata["infect_ln"]]
                         day= record[Reprod.coldata["day"]]
                         stat.add(day,infect)
@@ -143,7 +143,7 @@ class Reprod:
                     r = self.R0(k)
                     try:
                         ka= k - self.stdevkoef * reg["da"]
-                        kb= k + self.stdevkoef * reg["db"]
+                        kb= k + self.stdevkoef * reg["da"]
                     except TypeError:
                         ka = k
                         kb = k

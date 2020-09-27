@@ -54,9 +54,19 @@ def makedat(infile, outfile, outtailfile="", running=1, formatdts="dts", delim="
 
 #########################################################################
 # read covid input files, calculate the reproduction number and write output in format for xmgrace
+# test0 : constructed set
 # test1 : Jena
 # test2 : Slovensko
 # test3 : Cesko
+
+test=0
+delim=','
+for days in [1,5]:
+    input_file = datsrc + str(test) + ".csv"
+    output_file = datout + str(test) + "-" + str(days) + ".dat"
+    tail_file = dattail + str(test) + "-" + str(days) + ".dat"
+    makedat(input_file, output_file, tail_file, days, "YMD", ",", coldts=0, colinfected=1,
+            colhealed=2, colactive=None, limit=9, par_l=7.0, par_d=9.0)
 
 days_list=[1,4,7,14]
 dts_format={1:"epoch", 2:"DMY", 3:"YMD"}

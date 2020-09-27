@@ -16,7 +16,6 @@ for line in open(datsrc + "regression-test.dat"):
         y = float(split[1])
         vx.append(x)
         vy.append(y)
-
 for x in vx:
     print("%5.2f" % x ,end=" ")
 print()
