@@ -22,12 +22,11 @@ class Reprod:
     colresult = {"dts": 1, "iso": 0, "day": 2, "k": 3, "r": 4 , "ka" : 5, "kb":6, "ra": 7, "rb":8 }
     ncolresult=5
 
-    def __init__(self, ax, ay, formatdts="dts",limit=0.0, l=7.0, d=9.0,stdevkoef = 10.0):
+    def __init__(self, ax, ay, formatdts="dts",limit=0.0, standard_period=7.0 ,stdevkoef = 5):
         ''' Reprod constructor'''
         # read initialization parameter into variables:
         self.par_limit=limit
-        self.par_l=l
-        self.par_d=d
+        self.par_standart_period=standard_period
         self.stdevkoef=stdevkoef
         self.log=False  # indicator whether logarythm column has been already calculated
         self.data = []
@@ -53,11 +52,14 @@ class Reprod:
 
     def R0(self,k):
         ''' Calculate R0 from known infection rate k, with the provided paramters l and d'''
-        return 1 + k * (self.par_l + self.par_d) + k * k * self.par_l * self.par_d
+        # this is aprroximation only, it should be exponential! return 1 + k * (self.par_l + self.par_d) + k * k * self.par_l * self.par_d
+        return   math.exp( k * self.par_standart_period)
 
     def calculate(self, running = 1, tail = False):
-        ''' Calculate the infection rate k and R0 - create a set of results'''
-        # creatge an empty field to store the result set
+        ''' Calculate the infection rate k and R0 - create a set of results
+        @rtype: object
+        '''
+        # k * (self.par_l + self.par_d)creatge an empty field to store the result set
         result_array = []
         if not self.log:  # if logarythm colum has not been calculated yet - do it!
            for index , record in enumerate(self.data):
