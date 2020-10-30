@@ -33,3 +33,6 @@ xmgrace -nxy  growthrate-ruska.dat -block reproduction_number-test3-14.dat  -bxy
 #
 #2020-03-25T12:00:00 0.09186639031190973 0.0818664 0.0718664
 #cat > robopol2.dat
+
+# death growth rate
+xmgrace

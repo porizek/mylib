@@ -50,7 +50,11 @@ def makedat(infile, outfile, outtailfile="", running=1, formatdts="dts", delim="
                NONE        NONE     >0       count = colactive
                NONE        NONE     <0       cound = colactive(this) - colactive(previous)
             """
-            if (colactive is not None and colactive < 0) and (colinfected is None)  and (colhealed is None) :
+            if (colactive is not None and colactive > 0) and (colinfected is None) and (colhealed is None):
+                active=int(split[colactive])
+                ax.append(dts)
+                ay.append(active)
+            elif (colactive is not None and colactive < 0) and (colinfected is None)  and (colhealed is None) :
               active = int(split[-colactive])
               if not lastactive is None :
                   ax.append(dts)
@@ -139,10 +143,28 @@ for test in range(2,4): # [2-slovensko,3-cesko]
         makedat(input_file, output_file, tail_file, days, dts_format[test], delim[test], coldts=0, colinfected=1, colhealed=2, colactive=None, limit=0.0, standart_period=5.0)
 
 # recalculation od Flegr "4 000 nakazenych za tyzden, 10 000 nakazenych za 2 tyzdne"
+# test=3  # cesko
+# days=14 # 14 day averaging
+#input_file= wrksrc + input_file_list[test]
+#output_file = "../data/wrk/flegr-thumb_rule" + str(test) + "-" + str(days) + ".dat"
+#tail_file = "../data/wrk/flegr-thumb_rule-tail" + str(test) + "-" + str(days) + ".dat"
+#makedat(input_file, output_file, tail_file, days, dts_format[test], delim[test], coldts=0, colinfected=None, colhealed=None,
+#        colactive=-1, limit=0.0, standart_period=5.0)
+
+# CR growth rate of death
 test=3  # cesko
 days=14 # 14 day averaging
 input_file= wrksrc + input_file_list[test]
-output_file = "../data/wrk/flegr-thumb_rule" + str(test) + "-" + str(days) + ".dat"
-tail_file = "../data/wrk/flegr-thumb_rule-tail" + str(test) + "-" + str(days) + ".dat"
+output_file = "../data/wrk/death" + str(test) + "-" + str(days) + ".dat"
+tail_file = "../data/wrk/death-tail" + str(test) + "-" + str(days) + ".dat"
 makedat(input_file, output_file, tail_file, days, dts_format[test], delim[test], coldts=0, colinfected=None, colhealed=None,
-        colactive=-1, limit=0.0, standart_period=7.0)
+        colactive=-3, limit=0.0, standart_period=5.0)
+
+# CR cumulative infected
+test=3  # cesko
+days=14 # 14 day averaging
+input_file= wrksrc + input_file_list[test]
+output_file = "../data/wrk/cumulative" + str(test) + "-" + str(days) + ".dat"
+tail_file = "../data/wrk/cumulative-tail" + str(test) + "-" + str(days) + ".dat"
+makedat(input_file, output_file, tail_file, days, dts_format[test], delim[test], coldts=0, colinfected=None, colhealed=None,
+        colactive=1, limit=0.0, standart_period=5.0)
