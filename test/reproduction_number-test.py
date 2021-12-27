@@ -12,7 +12,7 @@ wrkout = "../data/wrk/reproduction_number-test"
 wrktail = "../data/wrk/reproduction_number-test-tail"
 
 def makedat(infile, outfile, outtailfile="", running=1, formatdts="dts", delim=",", coldts=0, colinfected=1, colhealed=2,
-            colactive=None, limit=0.0, standart_period=7.0):
+            colactive=None, limit=0.0, duration_R=7.0):
     '''
     Wrapper for reading data from common COVID files and passing then further for the reproduction number calculation
     @param infile:  filename of the common input CSV file to be read
@@ -27,7 +27,7 @@ def makedat(infile, outfile, outtailfile="", running=1, formatdts="dts", delim="
     @param colhealed: which colum has healed count - cumulative
     @param colactive: which colum has active count (= infected - healed)
     @param limit: what is the limit count of active to be included into calculation
-    @param standart_period:
+    @param duration_R:
     @return: none - the output files are created
     '''
 
@@ -75,8 +75,7 @@ def makedat(infile, outfile, outtailfile="", running=1, formatdts="dts", delim="
               raise IOError(
                     "Invalid definition of input colums: colinfected = %d, colhealed = %d ,colactive =%d " % (colinfected,colhealed,colactive) )
     # calculate
-    reprod = Reprod(ax, ay, formatdts, limit, standart_period)
-    result = reprod.calculate(running)
+    reprod = Reprod(ax, ay, formatdts, limit, duration_R)
     # write result in xmgrace format into output file
     with open(outfile, "w") as f:
         for line in open(infile):
@@ -111,7 +110,7 @@ for days in [1,5]:
     output_file = datout + str(test) + "-" + str(days) + ".dat"
     tail_file = dattail + str(test) + "-" + str(days) + ".dat"
     makedat(input_file, output_file, tail_file, days, "YMD", ",", coldts=0, colinfected=1,
-            colhealed=2, colactive=None, limit=9, standart_period=7.0)
+            colhealed=2, colactive=None, limit=9, duration_R=7.0)
 
 # standart test for real datafile
 # test=1 Jena - Germany
@@ -127,7 +126,7 @@ for test in range(1,4): # [1,2,3]
         input_file = datsrc + str(test) + ".csv"
         output_file = datout + str(test) + "-" + str(days) + ".dat"
         tail_file = dattail + str(test) + "-" + str(days) + ".dat"
-        makedat(input_file, output_file, tail_file, days, dts_format[test], delim[test], coldts=0, colinfected=1, colhealed=2, colactive=None, limit=0.0, standart_period=7.0)
+        makedat(input_file, output_file, tail_file, days, dts_format[test], delim[test], coldts=0, colinfected=1, colhealed=2, colactive=None, limit=0.0, duration_R=7.0)
 
 # no real testing, rather recalculation of the current status
 # 1. download wrk/korona.gov.sk.csv from https://mapa.covid.chat/export/csv
@@ -140,7 +139,7 @@ for test in range(2,4): # [2-slovensko,3-cesko]
         input_file= wrksrc + input_file_list[test]
         output_file = wrkout + str(test) + "-" + str(days) + ".dat"
         tail_file = wrktail + str(test) + "-" + str(days) + ".dat"
-        makedat(input_file, output_file, tail_file, days, dts_format[test], delim[test], coldts=0, colinfected=1, colhealed=2, colactive=None, limit=0.0, standart_period=5.0)
+        makedat(input_file, output_file, tail_file, days, dts_format[test], delim[test], coldts=0, colinfected=1, colhealed=2, colactive=None, limit=0.0, duration_R=5.0)
 
 # recalculation od Flegr "4 000 nakazenych za tyzden, 10 000 nakazenych za 2 tyzdne"
 # test=3  # cesko
@@ -158,7 +157,7 @@ input_file= wrksrc + input_file_list[test]
 output_file = "../data/wrk/death" + str(test) + "-" + str(days) + ".dat"
 tail_file = "../data/wrk/death-tail" + str(test) + "-" + str(days) + ".dat"
 makedat(input_file, output_file, tail_file, days, dts_format[test], delim[test], coldts=0, colinfected=None, colhealed=None,
-        colactive=-3, limit=0.0, standart_period=5.0)
+        colactive=-3, limit=0.0, duration_R=5.0)
 
 # CR cumulative infected
 test=3  # cesko
@@ -167,4 +166,4 @@ input_file= wrksrc + input_file_list[test]
 output_file = "../data/wrk/cumulative" + str(test) + "-" + str(days) + ".dat"
 tail_file = "../data/wrk/cumulative-tail" + str(test) + "-" + str(days) + ".dat"
 makedat(input_file, output_file, tail_file, days, dts_format[test], delim[test], coldts=0, colinfected=None, colhealed=None,
-        colactive=1, limit=0.0, standart_period=5.0)
+        colactive=1, limit=0.0, duration_R=5.0)
